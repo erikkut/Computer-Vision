@@ -1,15 +1,16 @@
-import cv2
+#import cv2
 from numpy import *
 from matplotlib.pyplot import *
 from mpl_toolkits.mplot3d import Axes3D
 
 def colorHistogram(im, n):
+    shp = (len(im), len(im[0]))
     step = 255/n
 
     #separate each color channel
-    red = zeros(gray.shape)
-    green = zeros(gray.shape)
-    blue = zeros(gray.shape)
+    red = zeros(shp)
+    green = zeros(shp)
+    blue = zeros(shp)
     red[:,:] = im[:,:,0]
     green[:,:] = im[:,:,1]
     blue[:,:] = im[:,:,2]
@@ -83,26 +84,26 @@ def hamming(im1, im2):
             ham[x][y] = getHamming(bin(census1[x][y]), bin(census2[x][y]))
     return ham
 
-im = cv2.imread('empire.jpg')#PLACE YOUR IMAGE HERE
-gray = cv2.cvtColor(im,cv2.COLOR_BGR2GRAY)
-
-h = colorHistogram(im, 10)
-print("COLOR HISTOGRAM")
-print(h)
-print()
-
-h3 = cubeColorHistogram(im, 3)
-z, x, y = nonzero(h3)
-fig = figure()
-ax = fig.add_subplot(111, projection='3d')
-ax.scatter(x, y, z)
-show()
-
-c = censusTransform(gray)
-print("CENSUS TRANSFORM")
-print(c)
-print()
-
-ham = hamming(gray, gray)
-print("HAMMING")
-print(ham)
+# im = cv2.imread('empire.jpg')#PLACE YOUR IMAGE HERE
+# gray = cv2.cvtColor(im,cv2.COLOR_BGR2GRAY)
+#
+# h = colorHistogram(im, 10)
+# print("COLOR HISTOGRAM")
+# print(h)
+# print()
+#
+# h3 = cubeColorHistogram(im, 3)
+# z, x, y = nonzero(h3)
+# fig = figure()
+# ax = fig.add_subplot(111, projection='3d')
+# ax.scatter(x, y, z)
+# show()
+#
+# c = censusTransform(gray)
+# print("CENSUS TRANSFORM")
+# print(c)
+# print()
+#
+# ham = hamming(gray, gray)
+# print("HAMMING")
+# print(ham)

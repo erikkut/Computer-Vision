@@ -1,8 +1,10 @@
-import cv2
 from matplotlib.pyplot import *
 from numpy import *
+
+from featureSetsQuiz import colorHistogram
 from readLoad import load_mnist
 from sklearn.cluster import KMeans
+import time
 
 def colorClustering(im, clusters, n):
     image_array = np.reshape(im, (len(im) * len(im[0]), len(im[0][0])))  # convert to 2-d matrix to handle easier
@@ -22,55 +24,99 @@ def colorClustering(im, clusters, n):
     image = array(image, 'uint8')
     return image
 
-def intensityClustering(trainIms, testIms, clusters, n):
+def intensityClustering(clusters, n):
+    start_time = time.time()
+
+    #GET MNIST DATASET
+    path = "C:/Users/Owner/Documents/GitHub/Computer-Vision/Lab3/"
+    trainIms, trainingLabels = load_mnist("training", np.arange(10), path)
+    testIms, testingLabels = load_mnist("testing", np.arange(10),path)
+
+    #RESHAPE DATASET TO FEED INTO KMEANS
     trainIms = np.reshape(trainIms, (len(trainIms), len(trainIms[0])*len(trainIms[0][0])))#reshape into array the size of number of images with each index contaning a flattened array of the corresponding images
     trainIms = array(trainIms, 'float64')
-
     testIms = np.reshape(testIms, (len(testIms), len(testIms[0])*len(testIms[0][0])))#reshape testing images in same manner
     testIms = array(testIms, 'float64')
+    testingLabels = reshape(testingLabels, (len(testingLabels)))
 
-    kmean = KMeans(n_clusters=clusters, n_init=n).fit(testIms)#trainIms
-    labels = kmean.predict(testIms)
-    predicted = zeros(len(labels))
-    clusters = kmean.cluster_centers_
+    #RUN KMEANS ON TRAINING SET AND PREDICT CLUSTERS ON TESTING SET
+    kmean = KMeans(n_clusters=clusters, n_init=n).fit(trainIms)
+    predictedLabels = kmean.predict(testIms)
 
-    print(clusters)
+    #FIGURE OUT WHAT CLUSTER BELONGS TO WHAT NUMBER BY USING DIFFERENT ARRAY OPERATIONS
+    linkTable = zeros((clusters, 10))
+    randomIndex = (random.rand(1000) * 10000).astype('int')
+    for i in randomIndex:
+        linkTable[predictedLabels[i]][testingLabels[i]] += 1  # Sequence is important, rows most be predicted Labels
+    transformTable = zeros(clusters)
+    for i in range(len(linkTable)):
+        transformTable[i] = argmax(linkTable[i])
+    for i in range(len(predictedLabels)):
+        predictedLabels[i] = transformTable[predictedLabels[i]]
 
-    #for z in range(len(labels)):
-     #   predicted[z] = clusters[labels[z]]
+    #CALCULATE RESULTS AND ERROR
+    result = testingLabels - predictedLabels
+    error = count_nonzero(result)
+    print("Number of erronous predictions: %d / %d" % (error, len(result)))
+    print("Percentage error: %f" %(error/len(result)))
 
-    print("Predicted Labels:")
-    print(predicted)
-    return predicted
+    print("kmeans running time: %s minutes" % ((time.time() - start_time)/60))
+    return predictedLabels
+
+def unpickle(file):
+    import pickle
+    f = open(file, 'rb')
+    dict = pickle.load(f, encoding = 'latin1')
+    f.close()
+    return dict
+
+def colorHistogramClustering(clusters, n):
+    start_time = time.time()
+
+    #GET CIFAR DATASET
+    filePath = "C:/Users/Owner/Documents/GitHub/Computer-Vision/Lab3/cifar-10-batches-py/data_batch_"
+    dict_1 = unpickle(filePath+"1")
+    dict_2 = unpickle(filePath+"2")
+
+    #RESHAPE THE DATA TO OBTAIN ARRAY CONTAINING 10,000 RGB IMAGES
+    batchIms1 = reshape(dict_1['data'], (10000,32,32,3), order='F')
+    imsTesting = reshape(dict_2['data'], (10000,32,32,3), order='F')
+
+    #TURN EACH SET OF IMAGES INTO THEIR CORRESPONDING COLOR HISTOGRAM
+    bins = 3
+    colorHist1 = zeros((10000, 3*bins))
+    colorHistTesting = zeros((10000, 3*bins))
+    for i in range(10000):
+        colorHist1[i] = ndarray.flatten(colorHistogram(batchIms1[i], bins))
+        colorHistTesting[i] = ndarray.flatten(colorHistogram(imsTesting[i], bins))
+
+    #FEED HISTOGRAMS TO KMEANS
+    kmean = KMeans(n_clusters=clusters, n_init=n).fit(colorHist1)
+    predictedLabels = kmean.predict(colorHistTesting)
+
+    #DETERMINE WHAT CLUSTERS POINT TO WHAT CLASSIFIER
+    linkTable = zeros((clusters, 10))
+    randomIndex = (random.rand(1000) * 10000).astype('int')
+    for i in randomIndex:
+        linkTable[predictedLabels[i]][dict_1['labels'][i]] += 1  # Sequence is important, rows most be predicted Labels
+    transformTable = zeros(clusters)
+    for i in range(len(linkTable)):
+        transformTable[i] = argmax(linkTable[i])
+    for i in range(len(predictedLabels)):
+        predictedLabels[i] = transformTable[predictedLabels[i]]
+
+    #CALCULATE RESULTS AND ERROR
+    result = dict_1['labels'] - predictedLabels
+    error = count_nonzero(result)
+    print("Number of erronous predictions: %d / %d" % (error, len(result)))
+    print("Percentage error: %f" %(error/len(result)))
+
+    print("kmeans running time: %s minutes" % ((time.time() - start_time)/60))
+    return predictedLabels
 
 
+#predictedLabels = intensityClustering(10, 10)
+colorHistogramClustering(10, 10)
 
-# im = cv2.imread('Sara.jpg')
-# im = array(im)
-# clustered1 = colorClustering(im, 5, 10)
-# clustered2 = colorClustering(im, 15, 10)
-# clustered3 = colorClustering(im, 25, 10)
-# cv2.imshow('Original', im)
-# cv2.imshow('K-Means 5-color clustering', clustered1)
-# cv2.imshow('K-Means 15-color clustering', clustered2)
-# cv2.imshow('K-Means 25-color clustering', clustered3)
-# cv2.waitKey(0)
-# cv2.destroyAllWindows()
-
-trainingArrImages, trainingLabels = load_mnist("training", np.arange(10), "C:/Users/Eric/PycharmProjects/Computer Vision/Lab3/")
-testingArrImages, testingLabels = load_mnist("testing", np.arange(10), "C:/Users/Eric/PycharmProjects/Computer Vision/Lab3/")
-predictedLabels = intensityClustering(trainingArrImages, testingArrImages, 10, 10)
-print("Actual Labels:")
-testingLabels = np.reshape(testingLabels, (len(testingLabels)))
-print(testingLabels)
-result = testingLabels-predictedLabels
-error = count_nonzero(result)
-print("Number of erronous predictions:")
-print(error)
-print("% Error:")
-print(error/len(result))
-print("Lenght of testing and length of predicted")
-print(len(testingLabels))
-print(len(predictedLabels))
 #imshow(images.mean(axis=0), cmap=cm.gray)
 #show()
