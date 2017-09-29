@@ -98,7 +98,7 @@ def find(region, im):
 
 ###############################################################################
 # load the image, clone it, and setup the mouse callback function
-image = cv2.imread("Lab 2 Test Image 2.jpg")
+image = cv2.imread("Lab 2 Test Image.jpg")
 clone = image.copy()
 cv2.namedWindow("image")
 cv2.setMouseCallback("image", click_and_crop)
@@ -110,6 +110,9 @@ while True:
     if key == ord("r"):
         image = clone.copy()
 
+    if(size(refPt) > 3):
+        break
+
     # if the 'q' key is pressed, break from the loop
     elif key == ord("q"):
         break
@@ -117,7 +120,7 @@ while True:
 cv2.destroyAllWindows()
 ################################################################################
 
-test = array(Image.open("Lab 2 Test Image 2.jpg").convert('L'))
+test = array(Image.open("Lab 2 Test Image.jpg").convert('L'))
 region = test[refPt[0][1]:refPt[1][1], refPt[0][0]:refPt[1][0]]
 coordinates = find(region, test)
 
